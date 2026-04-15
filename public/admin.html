@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>동샵 관리자</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;display:flex;min-height:100vh;color:#1e293b}
+    /* Sidebar */
+    #sidebar{width:220px;background:#1e293b;color:#cbd5e1;display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;height:100vh;z-index:100}
+    #sidebar .logo{padding:24px 20px 20px;border-bottom:1px solid #334155}
+    #sidebar .logo h1{font-size:18px;font-weight:700;color:#f97316}
+    #sidebar .logo span{font-size:11px;color:#64748b;margin-top:2px;display:block}
+    #sidebar nav{flex:1;padding:12px 0;overflow-y:auto}
+    #sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;color:#94a3b8;cursor:pointer;border-left:3px solid transparent;transition:all .15s;text-decoration:none}
+    #sidebar nav a:hover{color:#f1f5f9;background:#334155}
+    #sidebar nav a.active{color:#f97316;background:#2d3f55;border-left-color:#f97316}
+    #sidebar nav a svg{width:16px;height:16px;flex-shrink:0}
+    #sidebar .badge{margin-left:auto;background:#ef4444;color:white;font-size:10px;padding:1px 6px;border-radius:9999px;font-weight:700}
+    /* Main */
+    #main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+    #topbar{background:white;padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:50}
+    #topbar h2{font-size:16px;font-weight:600;color:#1e293b}
+    #topbar .time{font-size:12px;color:#94a3b8}
+    #content{padding:24px 28px;flex:1}
+    /* Page */
+    .page{display:none}.page.active{display:block}
+    /* Cards */
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px}
+    .stat-card{background:white;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .stat-card .label{font-size:12px;color:#64748b;font-weight:500;margin-bottom:6px}
+    .stat-card .value{font-size:28px;font-weight:700;color:#1e293b}
+    .stat-card .sub{font-size:11px;color:#94a3b8;margin-top:4px}
+    .card{background:white;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:20px}
+    .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .card-header h3{font-size:14px;font-weight:600;color:#1e293b}
+    /* Table */
+    table{width:100%;border-collapse:collapse}
+    th{font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em;padding:8px 12px;text-align:left;border-bottom:2px solid #f1f5f9}
+    td{padding:10px 12px;font-size:13px;border-bottom:1px solid #f8fafc;vertical-align:middle}
+    tr:hover td{background:#fafbfc}
+    /* Buttons */
+    .btn{padding:6px 14px;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+    .btn-primary{background:#f97316;color:white}.btn-primary:hover{background:#ea6c08}
+    .btn-success{background:#10b981;color:white}.btn-success:hover{background:#059669}
+    .btn-danger{background:#ef4444;color:white}.btn-danger:hover{background:#dc2626}
+    .btn-secondary{background:#f1f5f9;color:#475569}.btn-secondary:hover{background:#e2e8f0}
+    .btn-blue{background:#3b82f6;color:white}.btn-blue:hover{background:#2563eb}
+    .btn-sm{padding:4px 10px;font-size:11px}
+    /* Badge */
+    .badge-green{background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:9999px;font-size:11px;font-weight:600}
+    .badge-gray{background:#f1f5f9;color:#475569;padding:3px 8px;border-radius:9999px;font-size:11px;font-weight:600}
+    .badge-red{background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:9999px;font-size:11px;font-weight:600}
+    .badge-orange{background:#ffedd5;color:#9a3412;padding:3px 8px;border-radius:9999px;font-size:11px;font-weight:600}
+    /* Form */
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .form-group{display:flex;flex-direction:column;gap:5px}
+    .form-group.full{grid-column:1/-1}
+    .form-group label{font-size:12px;font-weight:600;color:#374151}
+    .form-group input,.form-group select{padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;outline:none;transition:border .15s;background:white;color:#1e293b}
+    .form-group input:focus,.form-group select:focus{border-color:#f97316;box-shadow:0 0 0 3px rgba(249,115,22,.1)}
+    /* Order card */
+    .order-card{background:white;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-left:4px solid #f97316}
+    .order-card.delivery{border-left-color:#3b82f6}
+    .order-meta{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+    .order-id{font-size:13px;font-weight:700;color:#1e293b}
+    .order-time{font-size:11px;color:#94a3b8}
+    .order-items{font-size:12px;color:#475569;margin:6px 0}
+    .order-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9}
+    .order-price{font-size:15px;font-weight:700;color:#f97316}
+    /* Divider */
+    .divider{height:1px;background:#f1f5f9;margin:16px 0}
+    /* Empty */
+    .empty{text-align:center;padding:40px;color:#94a3b8;font-size:13px}
+    /* Refresh indicator */
+    .live-dot{width:8px;height:8px;background:#10b981;border-radius:50%;display:inline-block;margin-right:6px;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  </style>
+</head>
+<body>
+<div id="sidebar">
+  <div class="logo">
+    <h1>🍜 동샵</h1>
+    <span>관리자 센터</span>
+  </div>
+  <nav>
+    <a onclick="showPage('dashboard')" class="active" id="nav-dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      대시보드
+    </a>
+    <a onclick="showPage('products')" id="nav-products">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      상품 관리
+    </a>
+    <a onclick="showPage('timeslots')" id="nav-timeslots">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      시간대 관리
+    </a>
+    <a onclick="showPage('orders')" id="nav-orders">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      주문 내역
+      <span class="badge" id="orders-badge" style="display:none">0</span>
+    </a>
+    <a onclick="showPage('delivery')" id="nav-delivery">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>
+      배달 관리
+      <span class="badge" id="delivery-badge" style="display:none">0</span>
+    </a>
+  </nav>
+</div>
+
+<div id="main">
+  <div id="topbar">
+    <h2 id="topbar-title">대시보드</h2>
+    <span class="time"><span class="live-dot"></span>실시간 연동</span>
+  </div>
+  <div id="content">
+
+    <!-- 대시보드 -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="label">총 상품</div><div class="value" id="stat-products">-</div><div class="sub">등록된 상품 수</div></div>
+        <div class="stat-card"><div class="label">오늘 주문</div><div class="value" id="stat-orders">-</div><div class="sub">일반 주문</div></div>
+        <div class="stat-card"><div class="label">배달 주문</div><div class="value" id="stat-delivery">-</div><div class="sub">배달 세션 주문</div></div>
+        <div class="stat-card"><div class="label">활성 세션</div><div class="value" id="stat-sessions">-</div><div class="sub">진행중인 배달</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>최근 주문</h3><button class="btn btn-secondary btn-sm" onclick="showPage('orders')">전체 보기</button></div>
+        <div id="dashboard-recent-orders"><div class="empty">불러오는 중...</div></div>
+      </div>
+    </div>
+
+    <!-- 상품 관리 -->
+    <div class="page" id="page-products">
+      <div class="card">
+        <div class="card-header">
+          <h3>상품 목록</h3>
+          <button class="btn btn-primary btn-sm" onclick="openProductForm()">+ 상품 등록</button>
+        </div>
+        <table>
+          <thead><tr><th>상품</th><th>가격</th><th>카테고리</th><th>상태</th><th>액션</th></tr></thead>
+          <tbody id="products-tbody"></tbody>
+        </table>
+      </div>
+      <div class="card" id="product-form-card" style="display:none">
+        <div class="card-header"><h3 id="form-title">상품 등록</h3><button class="btn btn-secondary btn-sm" onclick="resetForm()">취소</button></div>
+        <div class="form-grid">
+          <div class="form-group"><label>ID</label><input id="f-id" placeholder="숫자 ID" /></div>
+          <div class="form-group"><label>이모지</label><input id="f-image" placeholder="🍜" /></div>
+          <div class="form-group full"><label>상품명</label><input id="f-name" placeholder="상품명 입력" /></div>
+          <div class="form-group"><label>가격</label><input id="f-price" type="number" placeholder="3500" /></div>
+          <div class="form-group"><label>카테고리</label><input id="f-category" placeholder="ramen / snack" /></div>
+          <div class="form-group full"><label>옵션 (쉼표 구분)</label><input id="f-options" placeholder="짜게, 중간, 싱겁게" /></div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:8px">
+          <button class="btn btn-success" onclick="submitProduct()">저장</button>
+          <button class="btn btn-secondary" onclick="resetForm()">취소</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 시간대 관리 -->
+    <div class="page" id="page-timeslots">
+      <div class="card">
+        <div class="card-header"><h3>시간대 목록</h3></div>
+        <table>
+          <thead><tr><th>시간대</th><th>상태</th></tr></thead>
+          <tbody id="timeslots-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 주문 내역 -->
+    <div class="page" id="page-orders">
+      <div class="card-header" style="margin-bottom:16px">
+        <h3 style="font-size:14px;font-weight:600;color:#1e293b">일반 주문 내역</h3>
+        <span class="live-dot" style="margin-left:8px"></span>
+      </div>
+      <div id="orders-container"></div>
+    </div>
+
+    <!-- 배달 관리 -->
+    <div class="page" id="page-delivery">
+      <div class="card">
+        <div class="card-header"><h3>세션 생성</h3></div>
+        <div class="form-grid">
+          <div class="form-group full"><label>세션 이름</label><input id="ds-title" placeholder="4월 15일 점심 배달" /></div>
+          <div class="form-group"><label>시작 시간</label><input id="ds-start" placeholder="12:00" /></div>
+          <div class="form-group"><label>종료 시간</label><input id="ds-end" placeholder="12:30" /></div>
+        </div>
+        <div style="margin-top:16px"><button class="btn btn-success" onclick="createSession()">세션 생성</button></div>
+      </div>
+      <div id="sessions-container"></div>
+      <div class="card" style="margin-top:20px">
+        <div class="card-header"><h3>배달 주문 내역</h3></div>
+        <div id="delivery-orders-container"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>(function(){let r=null,u={};function v(e){document.querySelectorAll(".page").forEach(d=>d.classList.remove("active")),document.querySelectorAll("#sidebar nav a").forEach(d=>d.classList.remove("active")),document.getElementById("page-"+e).classList.add("active"),document.getElementById("nav-"+e).classList.add("active");const n={dashboard:"\uB300\uC2DC\uBCF4\uB4DC",products:"\uC0C1\uD488 \uAD00\uB9AC",timeslots:"\uC2DC\uAC04\uB300 \uAD00\uB9AC",orders:"\uC8FC\uBB38 \uB0B4\uC5ED",delivery:"\uBC30\uB2EC \uAD00\uB9AC"};document.getElementById("topbar-title").textContent=n[e]||e}window.showPage=v;function h(){document.getElementById("product-form-card").style.display="block",document.getElementById("product-form-card").scrollIntoView({behavior:"smooth"})}function f(){r=null,document.getElementById("form-title").textContent="\uC0C1\uD488 \uB4F1\uB85D",["f-id","f-image","f-name","f-price","f-category","f-options"].forEach(e=>document.getElementById(e).value=""),document.getElementById("f-id").disabled=!1,document.getElementById("product-form-card").style.display="none"}window.openProductForm=h,window.resetForm=f;async function E(){const e=document.getElementById("f-id").value.trim(),n=document.getElementById("f-name").value.trim(),d=parseInt(document.getElementById("f-price").value),t=document.getElementById("f-category").value.trim(),o=document.getElementById("f-image").value.trim(),i=document.getElementById("f-options").value.trim(),s=i?i.split(",").map(g=>g.trim()):[];if(!e||!n||!d||!t)return alert("ID, \uC0C1\uD488\uBA85, \uAC00\uACA9, \uCE74\uD14C\uACE0\uB9AC\uB294 \uD544\uC218\uC785\uB2C8\uB2E4.");r?await fetch(`/api/admin/products/${r}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n,price:d,category:t,image:o,options:s})}):await fetch("/api/admin/products",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:e,name:n,price:d,category:t,image:o,options:s})}),f(),m()}window.submitProduct=E;async function $(e){confirm(`\uC0C1\uD488 "${e}"\uC744 \uC0AD\uC81C\uD560\uAE4C\uC694?`)&&(await fetch(`/api/admin/products/${e}`,{method:"DELETE"}),m())}window.deleteProduct=$;function w(e){r=e.id,document.getElementById("form-title").textContent="\uC0C1\uD488 \uC218\uC815",document.getElementById("f-id").value=e.id,document.getElementById("f-id").disabled=!0,document.getElementById("f-name").value=e.name,document.getElementById("f-price").value=e.price,document.getElementById("f-category").value=e.category,document.getElementById("f-image").value=e.image||"",document.getElementById("f-options").value=(e.options||[]).join(", "),document.getElementById("product-form-card").style.display="block",document.getElementById("product-form-card").scrollIntoView({behavior:"smooth"})}window.editProduct=e=>w(u[e]);async function m(){const e=await fetch("/api/products"),n=await e.json(),d=document.getElementById("products-tbody");d.innerHTML="",u={},n.forEach(t=>{u[t.id]=t;const o=document.createElement("tr");o.innerHTML=`<td><span style="font-size:18px">${t.image}</span> <strong>${t.name}</strong></td><td><strong>${t.price.toLocaleString()}\uC6D0</strong></td><td><span class="badge-gray">${t.category}</span></td><td><span class="${t.isSoldOut?"badge-red":"badge-green"}">${t.isSoldOut?"\uD488\uC808":"\uD310\uB9E4\uC911"}</span></td><td style="display:flex;gap:6px;align-items:center">
+            <button class="btn btn-secondary btn-sm" onclick="toggleProductSoldOut('${t.id}',${!t.isSoldOut})">${t.isSoldOut?"\uD310\uB9E4 \uC7AC\uAC1C":"\uD488\uC808 \uCC98\uB9AC"}</button>
+            <button class="btn btn-blue btn-sm" onclick="editProduct('${t.id}')">\uC218\uC815</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteProduct('${t.id}')">\uC0AD\uC81C</button>
+           </td>`,d.appendChild(o)}),document.getElementById("stat-products").textContent=n.length}async function I(e,n){await fetch(`/api/admin/products/${e}/soldout`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({isSoldOut:n})}),m()}window.toggleProductSoldOut=I;async function b(){const e=await fetch("/api/timeslots"),n=await e.json(),d=document.getElementById("timeslots-tbody");d.innerHTML="",n.forEach(t=>{const o=document.createElement("tr");o.innerHTML=`<td><strong>${t.label}</strong></td><td style="display:flex;gap:8px;align-items:center"><span class="${t.available?"badge-green":"badge-red"}">${t.available?"\uC8FC\uBB38 \uAC00\uB2A5":"\uB9C8\uAC10\uB428"}</span><button class="btn btn-secondary btn-sm" onclick="toggleTimeslotAvailable('${t.id}',${!t.available})">${t.available?"\uB9C8\uAC10 \uCC98\uB9AC":"\uC7AC\uC624\uD508"}</button></td>`,d.appendChild(o)})}async function B(e,n){await fetch(`/api/admin/timeslots/${e}/available`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({available:n})}),b()}window.toggleTimeslotAvailable=B;async function x(e){confirm("\uC8FC\uBB38\uC744 \uC0AD\uC81C\uD560\uAE4C\uC694?")&&(await fetch(`/api/admin/orders/${e}`,{method:"DELETE"}),y())}window.deleteOrder=x;async function S(e){confirm("\uBC30\uB2EC \uC8FC\uBB38\uC744 \uC0AD\uC81C\uD560\uAE4C\uC694?")&&(await fetch(`/api/admin/delivery/orders/${e}`,{method:"DELETE"}),p())}window.deleteDeliveryOrder=S;async function y(){const e=await fetch("/api/admin/orders"),n=await e.json(),d=document.getElementById("orders-container"),t=document.getElementById("dashboard-recent-orders"),o=document.getElementById("orders-badge");document.getElementById("stat-orders").textContent=n.length,n.length>0?(o.style.display="inline",o.textContent=n.length):o.style.display="none";const i=(s,g)=>s.length?s.slice(0,g||999).sort((a,l)=>new Date(l.createdAt)-new Date(a.createdAt)).map(a=>`
+        <div class="order-card">
+          <div class="order-meta">
+            <div>
+              <div class="order-id">#${a.id.slice(-6)}</div>
+              <div class="order-time">${new Date(a.createdAt).toLocaleString("ko-KR")}</div>
+            </div>
+            <span class="badge-orange">\uC8FC\uBB38\uC811\uC218</span>
+          </div>
+          <div class="order-items">
+            <strong style="color:#1e293b">${a.buyerName||"\uBBF8\uC785\uB825"}</strong> \xB7 ${a.buyerPhone||"-"} \xB7 <span style="color:#94a3b8">${a.timeSlotLabel}</span>
+          </div>
+          <div class="order-items">${a.items.map(l=>`${l.name} x${l.quantity}${l.taste?` (${l.taste})`:""}`).join(" \xB7 ")}</div>
+          <div class="order-footer">
+            <span class="order-price">${a.totalPrice.toLocaleString()}\uC6D0</span>
+            <button class="btn btn-danger btn-sm" onclick="deleteOrder('${a.id}')">\uC0AD\uC81C</button>
+          </div>
+        </div>`).join(""):'<div class="empty">\uC8FC\uBB38\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.</div>';d&&(d.innerHTML=i(n)),t&&(t.innerHTML=i(n,5))}async function T(){const e=document.getElementById("ds-title").value.trim(),n=document.getElementById("ds-start").value.trim(),d=document.getElementById("ds-end").value.trim();if(!e||!n||!d)return alert("\uBAA8\uB4E0 \uD544\uB4DC\uB97C \uC785\uB825\uD558\uC138\uC694.");await fetch("/api/admin/delivery/sessions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:e,startTime:n,endTime:d})}),document.getElementById("ds-title").value="",document.getElementById("ds-start").value="",document.getElementById("ds-end").value="",c()}window.createSession=T;async function L(e,n){await fetch(`/api/admin/delivery/sessions/${e}/status`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:n})}),c()}window.toggleSessionStatus=L;async function O(e){confirm("\uC138\uC158\uC744 \uC0AD\uC81C\uD560\uAE4C\uC694? \uBA54\uB274\uB3C4 \uD568\uAED8 \uC0AD\uC81C\uB429\uB2C8\uB2E4.")&&(await fetch(`/api/admin/delivery/sessions/${e}`,{method:"DELETE"}),c())}window.deleteSession=O;async function P(e){const n=document.getElementById(`mi-name-${e}`).value.trim(),d=parseInt(document.getElementById(`mi-price-${e}`).value);if(!n||!d)return alert("\uBA54\uB274\uBA85\uACFC \uAC00\uACA9\uC744 \uC785\uB825\uD558\uC138\uC694.");await fetch(`/api/admin/delivery/sessions/${e}/menu`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n,price:d})}),document.getElementById(`mi-name-${e}`).value="",document.getElementById(`mi-price-${e}`).value="",c()}window.addMenuItem=P;async function C(e){await fetch(`/api/admin/delivery/menu/${e}`,{method:"DELETE"}),c()}window.deleteMenuItem=C;async function c(){const e=await(await fetch("/api/delivery/sessions")).json(),n=document.getElementById("sessions-container");let d=0;if(n.innerHTML="",!e.length){n.innerHTML='<div class="card"><div class="empty">\uC138\uC158\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.</div></div>';return}for(const t of e){t.status==="active"&&d++;const o=await(await fetch(`/api/delivery/sessions/${t.id}/menu`)).json(),i=document.createElement("div");i.className="card",i.innerHTML=`
+        <div class="card-header">
+          <div>
+            <strong>${t.title}</strong>
+            <span style="font-size:12px;color:#94a3b8;margin-left:8px">${t.startTime} ~ ${t.endTime}</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="${t.status==="active"?"badge-green":"badge-gray"}">${t.status==="active"?"\uC9C4\uD589\uC911":"\uB9C8\uAC10"}</span>
+            <button class="btn btn-secondary btn-sm" onclick="toggleSessionStatus('${t.id}','${t.status==="active"?"closed":"active"}')">${t.status==="active"?"\uB9C8\uAC10 \uCC98\uB9AC":"\uC7AC\uC624\uD508"}</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteSession('${t.id}')">\uC0AD\uC81C</button>
+          </div>
+        </div>
+        <table style="margin-bottom:12px">
+          <thead><tr><th>\uBA54\uB274\uBA85</th><th>\uAC00\uACA9</th><th></th></tr></thead>
+          <tbody>${o.length?o.map(s=>`<tr><td>${s.name}</td><td>${s.price.toLocaleString()}\uC6D0</td><td><button class="btn btn-danger btn-sm" onclick="deleteMenuItem('${s.id}')">\uC0AD\uC81C</button></td></tr>`).join(""):'<tr><td colspan="3" style="text-align:center;color:#94a3b8;font-size:12px;padding:12px">\uBA54\uB274 \uC5C6\uC74C</td></tr>'}</tbody>
+        </table>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="mi-name-${t.id}" placeholder="\uBA54\uB274\uBA85" style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;flex:1;outline:none" />
+          <input id="mi-price-${t.id}" placeholder="\uAC00\uACA9" type="number" style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;width:100px;outline:none" />
+          <button class="btn btn-success btn-sm" onclick="addMenuItem('${t.id}')">\uBA54\uB274 \uCD94\uAC00</button>
+        </div>`,n.appendChild(i)}document.getElementById("stat-sessions").textContent=d}async function p(){const e=await(await fetch("/api/admin/delivery/orders")).json(),n=document.getElementById("delivery-orders-container"),d=document.getElementById("delivery-badge");if(document.getElementById("stat-delivery").textContent=e.length,e.length>0?(d.style.display="inline",d.textContent=e.length):d.style.display="none",!e.length){n.innerHTML='<div class="empty">\uBC30\uB2EC \uC8FC\uBB38\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.</div>';return}n.innerHTML=e.sort((t,o)=>new Date(o.createdAt)-new Date(t.createdAt)).map(t=>`
+      <div class="order-card delivery">
+        <div class="order-meta">
+          <div>
+            <div class="order-id">#${t.id.slice(-6)}</div>
+            <div class="order-time">${new Date(t.createdAt).toLocaleString("ko-KR")}</div>
+          </div>
+          <span class="badge-green">\uBC30\uB2EC</span>
+        </div>
+        <div class="order-items"><strong style="color:#1e293b">${t.buyerName||"\uBBF8\uC785\uB825"}</strong> \xB7 ${t.buyerPhone||"-"}</div>
+        <div class="order-items">${t.items.map(o=>`${o.name} x${o.quantity}`).join(" \xB7 ")}</div>
+        <div class="order-footer">
+          <span class="order-price" style="color:#3b82f6">\u{1F4AC} \uAC00\uACA9 \uC548\uB0B4 \uD544\uC694</span>
+          <button class="btn btn-danger btn-sm" onclick="deleteDeliveryOrder('${t.id}')">\uC0AD\uC81C</button>
+        </div>
+      </div>`).join("")}m(),b(),y(),c(),p(),setInterval(()=>{y(),p()},5e3)})();</script>
+</body>
+</html>
